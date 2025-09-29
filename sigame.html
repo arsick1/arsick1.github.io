@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrainStorm - Редактируемая викторина</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --dark: #1f2937;
+            --light: #f8fafc;
+            --gray: #6b7280;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .app-container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--light);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            font-weight: 400;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .tab:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .game-screen {
+            padding: 30px 25px;
+        }
+        
+        .players-setup {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .setup-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-align: center;
+        }
+        
+        .player-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .player-input {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .player-input label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+        
+        .player-input input {
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        
+        .player-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .start-btn {
+            width: 100%;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .start-btn:hover {
+            background: #0da271;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+        }
+        
+        .game-stats {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .players-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .player-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .player-card.active {
+            border-color: var(--primary);
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+        }
+        
+        .player-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary);
+            transform: scaleX(0);
+            transition: var(--transition);
+        }
+        
+        .player-card.active::before {
+            transform: scaleX(1);
+        }
+        
+        .player-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+        
+        .player-score {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        
+        .stats-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+        
+        .points-value {
+            color: var(--warning);
+        }
+        
+        .question-value {
+            color: var(--purple);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .question-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: var(--transition);
+        }
+        
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .question-points {
+            background: var(--warning);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            color: var(--dark);
+        }
+        
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .answer-btn {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .answer-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .answer-btn:hover::before {
+            left: 100%;
+        }
+        
+        .answer-btn:hover {
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+        
+        .answer-btn.correct {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+            animation: pulse 0.6s;
+        }
+        
+        .answer-btn.wrong {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .feedback {
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: var(--transition);
+        }
+        
+        .feedback.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .feedback.correct {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+            border: 1px solid var(--secondary);
+        }
+        
+        .feedback.wrong {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .next-btn {
+            flex: 1;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .next-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+        
+        .next-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .restart-btn {
+            background: var(--pink);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .restart-btn:hover {
+            background: #db2777;
+            transform: translateY(-2px);
+        }
+        
+        .editor-screen {
+            padding: 30px 25px;
+        }
+        
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .editor-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .editor-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .editor-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #0da271;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+        
+        .editor-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .questions-list {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .questions-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+        
+        .question-item {
+            background: #f8fafc;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .question-item:hover {
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+        
+        .question-item.active {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .question-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .question-item-text {
+            font-weight: 600;
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .question-item-points {
+            background: var(--warning);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        
+        .question-item-answers {
+            font-size: 0.9rem;
+            color: var(--gray);
+            line-height: 1.4;
+        }
+        
+        .question-form {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+        
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .answers-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .answer-form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .correct-answer-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .winner-screen {
+            text-align: center;
+            padding: 40px 25px;
+            display: none;
+        }
+        
+        .winner-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .winner-subtitle {
+            font-size: 1.2rem;
+            color: var(--gray);
+            margin-bottom: 30px;
+        }
+        
+        .winner-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .winner-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+        
+        .winner-item:first-child {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            transform: scale(1.05);
+            border: 3px solid #fbbf24;
+        }
+        
+        .winner-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .winner-position {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            min-width: 40px;
+        }
+        
+        .winner-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            flex: 1;
+            text-align: left;
+            margin-left: 15px;
+        }
+        
+        .winner-score {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--warning);
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                max-width: 100%;
+                border-radius: 15px;
+            }
+            
+            .game-stats {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .answers-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .player-inputs {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .editor-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .answers-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="logo">🎮 BrainStorm</div>
+            <div class="subtitle">Редактируемая мультиплеерная викторина</div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="game">🎮 Игра</div>
+            <div class="tab" data-tab="editor">✏️ Редактор вопросов</div>
+        </div>
+        
+        <!-- Вкладка игры -->
+        <div class="tab-content active" id="game-content">
+            <div class="game-screen">
+                <div class="players-setup" id="players-setup">
+                    <div class="setup-title">Настройка игроков</div>
+                    <div class="player-inputs">
+                        <div class="player-input">
+                            <label for="player1">Игрок 1</label>
+                            <input type="text" id="player1" placeholder="Введите имя" value="Алексей">
+                        </div>
+                        <div class="player-input">
+                            <label for="player2">Игрок 2</label>
+                            <input type="text" id="player2" placeholder="Введите имя" value="Мария">
+                        </div>
+                        <div class="player-input">
+                            <label for="player3">Игрок 3</label>
+                            <input type="text" id="player3" placeholder="Введите имя" value="Дмитрий">
+                        </div>
+                    </div>
+                    <button class="start-btn" id="start-btn">Начать игру</button>
+                </div>
+                
+                <div id="game-play" style="display: none;">
+                    <div class="game-stats">
+                        <div class="players-display" id="players-display">
+                            <!-- Карточки игроков будут здесь -->
+                        </div>
+                        <div class="stats-card">
+                            <div class="stat-value points-value" id="current-points">100</div>
+                            <div class="stat-label">Очки за вопрос</div>
+                        </div>
+                        <div class="stats-card">
+                            <div class="stat-value question-value" id="question-number">1/10</div>
+                            <div class="stat-label">Вопрос</div>
+                        </div>
+                    </div>
+                    
+                    <div class="question-counter">
+                        Сейчас отвечает: <strong id="current-player-name">-</strong>
+                    </div>
+                    
+                    <div class="question-card">
+                        <div class="question-header">
+                            <div class="question-text" id="question-text">Загрузка вопроса...</div>
+                            <div class="question-points" id="question-points">100</div>
+                        </div>
+                        <div class="answers-grid" id="answers-grid">
+                            <!-- Ответы будут добавлены через JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="feedback" id="feedback"></div>
+                    
+                    <div class="controls">
+                        <button class="next-btn" id="next-btn" disabled>
+                            Следующий игрок
+                            <span>→</span>
+                        </button>
+                        <button class="restart-btn" id="restart-btn">
+                            Новая игра
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="winner-screen" id="winner-screen">
+                    <div class="winner-title">🏆 Победитель! 🏆</div>
+                    <div class="winner-subtitle">Финальные результаты</div>
+                    <div class="winner-list" id="winner-list">
+                        <!-- Список победителей будет здесь -->
+                    </div>
+                    <button class="restart-btn" id="new-game-btn" style="margin-top: 30px;">
+                        Новая игра
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Вкладка редактора -->
+        <div class="tab-content" id="editor-content">
+            <div class="editor-screen">
+                <div class="editor-header">
+                    <div class="editor-title">Редактор вопросов</div>
+                    <div class="editor-controls">
+                        <button class="editor-btn btn-primary" id="add-question-btn">
+                            + Новый вопрос
+                        </button>
+                        <button class="editor-btn btn-secondary" id="save-all-btn">
+                            💾 Сохранить все
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="editor-content">
+                    <div class="questions-list">
+                        <div class="questions-title">Список вопросов</div>
+                        <div id="questions-container">
+                            <!-- Список вопросов будет здесь -->
+                        </div>
+                    </div>
+                    
+                    <div class="question-form">
+                        <div class="form-title">Редактирование вопроса</div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-question-text">Текст вопроса:</label>
+                            <textarea class="form-textarea" id="edit-question-text" placeholder="Введите текст вопроса..."></textarea>
+                        </div>
+                        
+                        <div class="answers-form">
+                            <div class="answer-form-group">
+                                <label class="form-label" for="edit-answer-1">Ответ 1:</label>
+                                <input type="text" class="form-input" id="edit-answer-1" placeholder="Вариант ответа 1">
+                                <label class="correct-answer-label">
+                                    <input type="radio" name="correct-answer" value="0" id="correct-answer-0">
+                                    Правильный ответ
+                                </label>
+                            </div>
+                            <div class="answer-form-group">
+                                <label class="form-label" for="edit-answer-2">Ответ 2:</label>
+                                <input type="text" class="form-input" id="edit-answer-2" placeholder="Вариант ответа 2">
+                                <label class="correct-answer-label">
+                                    <input type="radio" name="correct-answer" value="1" id="correct-answer-1">
+                                    Правильный ответ
+                                </label>
+                            </div>
+                            <div class="answer-form-group">
+                                <label class="form-label" for="edit-answer-3">Ответ 3:</label>
+                                <input type="text" class="form-input" id="edit-answer-3" placeholder="Вариант ответа 3">
+                                <label class="correct-answer-label">
+                                    <input type="radio" name="correct-answer" value="2" id="correct-answer-2">
+                                    Правильный ответ
+                                </label>
+                            </div>
+                            <div class="answer-form-group">
+                                <label class="form-label" for="edit-answer-4">Ответ 4:</label>
+                                <input type="text" class="form-input" id="edit-answer-4" placeholder="Вариант ответа 4">
+                                <label class="correct-answer-label">
+                                    <input type="radio" name="correct-answer" value="3" id="correct-answer-3">
+                                    Правильный ответ
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="edit-question-points">Очки за вопрос:</label>
+                            <select class="form-select" id="edit-question-points">
+                                <option value="100">100 очков</option>
+                                <option value="200">200 очков</option>
+                                <option value="300">300 очков</option>
+                                <option value="400">400 очков</option>
+                                <option value="500">500 очков</option>
+                            </select>
+                        </div>
+                        
+                        <div class="editor-controls">
+                            <button class="editor-btn btn-primary" id="save-question-btn">
+                                💾 Сохранить вопрос
+                            </button>
+                            <button class="editor-btn btn-danger" id="delete-question-btn">
+                                🗑️ Удалить вопрос
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // База вопросов по умолчанию
+        let questions = [
+            {
+                question: "Какая планета известна как 'Красная планета'?",
+                answers: ["Венера", "Марс", "Юпитер", "Сатурн"],
+                correct: 1,
+                points: 100
+            },
+            {
+                question: "Сколько элементов в периодической таблице Менделеева?",
+                answers: ["118", "92", "150", "206"],
+                correct: 0,
+                points: 200
+            },
+            {
+                question: "Какой океан является самым большим на Земле?",
+                answers: ["Атлантический", "Индийский", "Тихий", "Северный Ледовитый"],
+                correct: 2,
+                points: 100
+            },
+            {
+                question: "Кто написал 'Преступление и наказание'?",
+                answers: ["Лев Толстой", "Федор Достоевский", "Антон Чехов", "Иван Тургенев"],
+                correct: 1,
+                points: 300
+            }
+        ];
+
+        // Переменные игры
+        let players = [];
+        let currentPlayerIndex = 0;
+        let usedQuestions = new Set();
+        let currentQuestion = null;
+        let gameStarted = false;
+        let totalQuestions = 0;
+        let currentEditingIndex = -1;
+
+        // Элементы DOM
+        const gameTab = document.querySelector('[data-tab="game"]');
+        const editorTab = document.querySelector('[data-tab="editor"]');
+        const gameContent = document.getElementById('game-content');
+        const editorContent = document.getElementById('editor-content');
+        
+        // Элементы игры
+        const playersSetup = document.getElementById('players-setup');
+        const gamePlay = document.getElementById('game-play');
+        const winnerScreen = document.getElementById('winner-screen');
+        const playersDisplay = document.getElementById('players-display');
+        const questionText = document.getElementById('question-text');
+        const questionPoints = document.getElementById('question-points');
+        const currentPoints = document.getElementById('current-points');
+        const answersGrid = document.getElementById('answers-grid');
+        const feedbackElement = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const newGameBtn = document.getElementById('new-game-btn');
+        const startBtn = document.getElementById('start-btn');
+        const questionNumber = document.getElementById('question-number');
+        const currentPlayerName = document.getElementById('current-player-name');
+        const winnerList = document.getElementById('winner-list');
+
+        // Элементы редактора
+        const questionsContainer = document.getElementById('questions-container');
+        const editQuestionText = document.getElementById('edit-question-text');
+        const editAnswer1 = document.getElementById('edit-answer-1');
+        const editAnswer2 = document.getElementById('edit-answer-2');
+        const editAnswer3 = document.getElementById('edit-answer-3');
+        const editAnswer4 = document.getElementById('edit-answer-4');
+        const editQuestionPoints = document.getElementById('edit-question-points');
+        const correctAnswerRadios = document.querySelectorAll('input[name="correct-answer"]');
+        const saveQuestionBtn = document.getElementById('save-question-btn');
+        const deleteQuestionBtn = document.getElementById('delete-question-btn');
+        const addQuestionBtn = document.getElementById('add-question-btn');
+        const saveAllBtn = document.getElementById('save-all-btn');
+
+        // Переключение вкладок
+        gameTab.addEventListener('click', () => {
+            gameTab.classList.add('active');
+            editorTab.classList.remove('active');
+            gameContent.classList.add('active');
+            editorContent.classList.remove('active');
+        });
+
+        editorTab.addEventListener('click', () => {
+            editorTab.classList.add('active');
+            gameTab.classList.remove('active');
+            editorContent.classList.add('active');
+            gameContent.classList.remove('active');
+            updateQuestionsList();
+        });
+
+        // ========== ФУНКЦИОНАЛ ИГРЫ ==========
+
+        function initializePlayers() {
+            players = [
+                {
+                    name: document.getElementById('player1').value || 'Игрок 1',
+                    score: 0,
+                    color: '#6366f1'
+                },
+                {
+                    name: document.getElementById('player2').value || 'Игрок 2',
+                    score: 0,
+                    color: '#10b981'
+                },
+                {
+                    name: document.getElementById('player3').value || 'Игрок 3',
+                    score: 0,
+                    color: '#8b5cf6'
+                }
+            ];
+        }
+
+        function updatePlayersDisplay() {
+            playersDisplay.innerHTML = '';
+            players.forEach((player, index) => {
+                const playerCard = document.createElement('div');
+                playerCard.className = `player-card ${index === currentPlayerIndex ? 'active' : ''}`;
+                playerCard.innerHTML = `
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-score">${player.score}</div>
+                `;
+                playersDisplay.appendChild(playerCard);
+            });
+        }
+
+        function getRandomQuestion() {
+            const availableQuestions = questions.filter((_, index) => !usedQuestions.has(index));
+            
+            if (availableQuestions.length === 0) {
+                usedQuestions.clear();
+                return getRandomQuestion();
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            const questionIndex = questions.indexOf(availableQuestions[randomIndex]);
+            usedQuestions.add(questionIndex);
+            
+            return availableQuestions[randomIndex];
+        }
+
+        function displayQuestion() {
+            currentQuestion = getRandomQuestion();
+            totalQuestions++;
+            
+            questionText.textContent = currentQuestion.question;
+            questionPoints.textContent = currentQuestion.points;
+            currentPoints.textContent = currentQuestion.points;
+            questionNumber.textContent = `${totalQuestions}`;
+            currentPlayerName.textContent = players[currentPlayerIndex].name;
+            
+            answersGrid.innerHTML = '';
+            const shuffledAnswers = [...currentQuestion.answers];
+            
+            for (let i = shuffledAnswers.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledAnswers[i], shuffledAnswers[j]] = [shuffledAnswers[j], shuffledAnswers[i]];
+            }
+            
+            shuffledAnswers.forEach((answer, index) => {
+                const answerBtn = document.createElement('button');
+                answerBtn.className = 'answer-btn';
+                answerBtn.textContent = answer;
+                answerBtn.dataset.index = currentQuestion.answers.indexOf(answer);
+                answerBtn.addEventListener('click', handleAnswer);
+                answersGrid.appendChild(answerBtn);
+            });
+            
+            feedbackElement.classList.remove('show', 'correct', 'wrong');
+            nextBtn.disabled = true;
+            updatePlayersDisplay();
+        }
+
+        function handleAnswer(event) {
+            if (!gameStarted) return;
+            
+            const selectedIndex = parseInt(event.target.dataset.index);
+            const answerButtons = document.querySelectorAll('.answer-btn');
+            const currentPlayer = players[currentPlayerIndex];
+            
+            answerButtons.forEach(btn => {
+                btn.style.pointerEvents = 'none';
+            });
+            
+            answerButtons.forEach(btn => {
+                const btnIndex = parseInt(btn.dataset.index);
+                if (btnIndex === currentQuestion.correct) {
+                    btn.classList.add('correct');
+                } else if (btnIndex === selectedIndex && btnIndex !== currentQuestion.correct) {
+                    btn.classList.add('wrong');
+                }
+            });
+            
+            if (selectedIndex === currentQuestion.correct) {
+                currentPlayer.score += currentQuestion.points;
+                showFeedback(`${currentPlayer.name} правильно! +${currentQuestion.points} очков`, 'correct');
+            } else {
+                showFeedback(`Неправильно! Правильный ответ: ${currentQuestion.answers[currentQuestion.correct]}`, 'wrong');
+            }
+            
+            nextBtn.disabled = false;
+            updatePlayersDisplay();
+        }
+
+        function showFeedback(message, type) {
+            feedbackElement.textContent = message;
+            feedbackElement.className = `feedback ${type} show`;
+        }
+
+        function nextPlayer() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            
+            if (currentPlayerIndex === 0 && totalQuestions >= 10) {
+                endGame();
+            } else {
+                displayQuestion();
+            }
+        }
+
+        function endGame() {
+            gameStarted = false;
+            gamePlay.style.display = 'none';
+            winnerScreen.style.display = 'block';
+            
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            
+            winnerList.innerHTML = '';
+            sortedPlayers.forEach((player, index) => {
+                const winnerItem = document.createElement('div');
+                winnerItem.className = 'winner-item';
+                winnerItem.innerHTML = `
+                    <div class="winner-position">${index + 1}</div>
+                    <div class="winner-name">${player.name}</div>
+                    <div class="winner-score">${player.score}</div>
+                `;
+                winnerList.appendChild(winnerItem);
+            });
+        }
+
+        function startGame() {
+            initializePlayers();
+            gameStarted = true;
+            usedQuestions.clear();
+            totalQuestions = 0;
+            currentPlayerIndex = 0;
+            
+            playersSetup.style.display = 'none';
+            gamePlay.style.display = 'block';
+            winnerScreen.style.display = 'none';
+            
+            displayQuestion();
+        }
+
+        function newGame() {
+            playersSetup.style.display = 'block';
+            gamePlay.style.display = 'none';
+            winnerScreen.style.display = 'none';
+        }
+
+        // ========== ФУНКЦИОНАЛ РЕДАКТОРА ==========
+
+        function updateQuestionsList() {
+            questionsContainer.innerHTML = '';
+            
+            questions.forEach((question, index) => {
+                const questionItem = document.createElement('div');
+                questionItem.className = `question-item ${index === currentEditingIndex ? 'active' : ''}`;
+                questionItem.innerHTML = `
+                    <div class="question-item-header">
+                        <div class="question-item-text">${question.question}</div>
+                        <div class="question-item-points">${question.points}</div>
+                    </div>
+                    <div class="question-item-answers">
+                        ${question.answers.map((answer, i) => 
+                            `${i === question.correct ? '✅' : '⚪'} ${answer}`
+                        ).join(' | ')}
+                    </div>
+                `;
+                
+                questionItem.addEventListener('click', () => {
+                    currentEditingIndex = index;
+                    loadQuestionToEditor();
+                    updateQuestionsList();
+                });
+                
+                questionsContainer.appendChild(questionItem);
+            });
+        }
+
+        function loadQuestionToEditor() {
+            if (currentEditingIndex === -1) {
+                clearEditor();
+                return;
+            }
+            
+            const question = questions[currentEditingIndex];
+            editQuestionText.value = question.question;
+            editAnswer1.value = question.answers[0] || '';
+            editAnswer2.value = question.answers[1] || '';
+            editAnswer3.value = question.answers[2] || '';
+            editAnswer4.value = question.answers[3] || '';
+            editQuestionPoints.value = question.points;
+            
+            // Устанавливаем правильный ответ
+            correctAnswerRadios.forEach(radio => {
+                radio.checked = parseInt(radio.value) === question.correct;
+            });
+            
+            deleteQuestionBtn.disabled = false;
+        }
+
+        function clearEditor() {
+            editQuestionText.value = '';
+            editAnswer1.value = '';
+            editAnswer2.value = '';
+            editAnswer3.value = '';
+            editAnswer4.value = '';
+            editQuestionPoints.value = '100';
+            correctAnswerRadios[0].checked = true;
+            currentEditingIndex = -1;
+            deleteQuestionBtn.disabled = true;
+        }
+
+        function saveQuestion() {
+            const questionText = editQuestionText.value.trim();
+            const answers = [
+                editAnswer1.value.trim(),
+                editAnswer2.value.trim(),
+                editAnswer3.value.trim(),
+                editAnswer4.value.trim()
+            ];
+            const points = parseInt(editQuestionPoints.value);
+            
+            // Находим выбранный правильный ответ
+            let correctAnswer = 0;
+            correctAnswerRadios.forEach(radio => {
+                if (radio.checked) {
+                    correctAnswer = parseInt(radio.value);
+                }
+            });
+            
+            // Валидация
+            if (!questionText) {
+                alert('Введите текст вопроса!');
+                return;
+            }
+            
+            if (answers.some(answer => !answer)) {
+                alert('Заполните все варианты ответов!');
+                return;
+            }
+            
+            const questionData = {
+                question: questionText,
+                answers: answers,
+                correct: correctAnswer,
+                points: points
+            };
+            
+            if (currentEditingIndex === -1) {
+                // Новый вопрос
+                questions.push(questionData);
+                currentEditingIndex = questions.length - 1;
+            } else {
+                // Редактирование существующего вопроса
+                questions[currentEditingIndex] = questionData;
+            }
+            
+            updateQuestionsList();
+            saveToLocalStorage();
+            alert('Вопрос сохранен!');
+        }
+
+        function deleteQuestion() {
+            if (currentEditingIndex === -1) return;
+            
+            if (confirm('Вы уверены, что хотите удалить этот вопрос?')) {
+                questions.splice(currentEditingIndex, 1);
+                clearEditor();
+                updateQuestionsList();
+                saveToLocalStorage();
+            }
+        }
+
+        function addNewQuestion() {
+            clearEditor();
+            updateQuestionsList();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('brainstorm-questions', JSON.stringify(questions));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('brainstorm-questions');
+            if (saved) {
+                questions = JSON.parse(saved);
+            }
+        }
+
+        // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
+
+        // Игра
+        startBtn.addEventListener('click', startGame);
+        nextBtn.addEventListener('click', nextPlayer);
+        restartBtn.addEventListener('click', newGame);
+        newGameBtn.addEventListener('click', newGame);
+
+        // Редактор
+        saveQuestionBtn.addEventListener('click', saveQuestion);
+        deleteQuestionBtn.addEventListener('click', deleteQuestion);
+        addQuestionBtn.addEventListener('click', addNewQuestion);
+        saveAllBtn.addEventListener('click', saveToLocalStorage);
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            initializePlayers();
+            updatePlayersDisplay();
+            updateQuestionsList();
+            clearEditor();
+        });
+    </script>
+</body>
+</html>
